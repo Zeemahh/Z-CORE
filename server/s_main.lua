@@ -10,7 +10,7 @@ teams = {
 
 sendChatMessage = function(player, message, color)
     TriggerClientEvent("chat:addMessage", player, {
-        args = { nil, message },
+        args = { message },
         color = color or {255, 255, 255}
     })
 end
@@ -38,12 +38,12 @@ end)
 
 RegisterCommand('job', function(source, args, raw)
     for k, v in pairs(teams) do
-        print(type(v))
-        print(type(v["id"]))
-        print(type(v["cmdName"]))
+        DebugPrint(type(v))
+        DebugPrint(type(v["id"]))
+        DebugPrint(type(v["cmdName"]))
         if v["cmdName"]:lower() == args[1]:lower() then
             teams[source] = v
-            print(teams[source].id)
+            DebugPrint(teams[source].id)
         end
     end
 end)
