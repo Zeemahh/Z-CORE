@@ -1,0 +1,4 @@
+-- RegisterNetEvent("ClientPrint")
+-- AddEventHandler("ClientPrint", function(text)
+--     Citizen.Trace(text)
+-- end)
