@@ -1,12 +1,22 @@
-debug = {}
+playerTeams = {}
+debugging = {}
 teams = {
-    -- players = {},
-    ["tm_civilian"] = {
-        ["id"] = 1,
+    ["civilian"] = {
+        ["id"] = 0,
         ["name"] = "Civilian",
         ["cmdName"] = "civ"
+    },
+
+    ["police"] = {
+        ["id"] = 1,
+        ["name"] = "Police",
+        ["cmdName"] = "police",
+        ["restricted"] = true,
+        ["restrictRank"] = "CR"
     }
 }
+
+alwaysDebug = GetConvarInt("JH1-RP.alwaysDebug", 0) ~= 0 and true or false
 
 sendChatMessage = function(player, message, color)
     TriggerClientEvent("chat:addMessage", player, {
@@ -16,40 +26,61 @@ sendChatMessage = function(player, message, color)
 end
 
 DebugPrint = function(player, text)
-    if debug[player] then
+    if debugging[player] or alwaysDebug then
         TriggerClientEvent("ClientPrint", player, "[" .. GetCurrentResourceName() .. "] " .. text)
     end
 end
 
 RegisterCommand('_debug', function(source)
-    debug[source] = not debug[source]
-    sendChatMessage(source, "You have " .. (debug[source] and "enabled" or "disabled") .. " debugging.")
+    debugging[source] = not debugging[source]
+    sendChatMessage(source, "You have " .. (debugging[source] and "enabled" or "disabled") .. " debugging.")
 end)
 
-AddEventHandler("playerSpawned", function()
-    local source
-    teams[source] = "tm_civilian"
-    debug[source] = false
+RegisterNetEvent("playerSpawned_s")
+AddEventHandler("playerSpawned_s", function()
+    RconPrint(GetPlayerName(source) .. " spawned into the server.\n")
+    playerTeams[source] = "tm_civilian"
+    debugging[source] = false
 end)
 
 AddEventHandler("playerDropped", function(reason)
-    RconPrint(GetPlayerName(source) .. " left. (" .. reason .. ").")
+    RconPrint(GetPlayerName(source) .. " left. (" .. reason .. ").\n")
+    playerTeams[source] = nil
+    debugging[source] = nil
 end)
 
 RegisterCommand('job', function(source, args, raw)
     for k, v in pairs(teams) do
-        DebugPrint(type(v))
-        DebugPrint(type(v["id"]))
-        DebugPrint(type(v["cmdName"]))
+        DebugPrint(source, type(v) .. " -> " .. json.encode(v))          -- table
+        DebugPrint(source, type(v["id"]) .. " -> " .. v["id"])           -- number
+        DebugPrint(source, type(v["cmdName"]) .. " -> " .. v["cmdName"]) -- string
         if v["cmdName"]:lower() == args[1]:lower() then
-            teams[source] = v
-            DebugPrint(teams[source].id)
+            playerTeams[source] = {
+                id = v.id,
+                name = v.name
+            }
+            break
         end
     end
+    DebugPrint(source, playerTeams[source].id .. " | " .. playerTeams[source].name)
+end)
+
+AddEventHandler("onServerResourceStart", function(name)
+    if name ~= GetCurrentResourceName() then return end
+    print(name)
 end)
 
 RegisterCommand('r', function(source, args, raw)
-    if teams[source] == tm_civilian then
-        sendChatMessage(source, "Your team is: [ " .. teams[source] .. " ].")
-    end
+    sendChatMessage(source, "Your team is: [ " .. playerTeams[source] .. " ].")
+end)
+
+-- Chat suggestions
+AddEventHandler("playerSpawned_s", function()
+    TriggerClientEvent("chat:addSuggestion", source, "/job", "Set your player job!", {
+        {
+            name = "job",
+            help = "the job you wish to play as"
+        }
+    })
+    print("ok, shit should be set")
 end)
